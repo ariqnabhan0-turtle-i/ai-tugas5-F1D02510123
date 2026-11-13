@@ -59,15 +59,15 @@ Jawab setiap pertanyaan dengan `y` (ya) atau `t` (tidak).
 
 **Kasus 1**
 
-![Kasus 1](screenshot/kasus1.png)
+![Kasus 1](screenshot/Kasus1.png)
 
 **Kasus 2**
 
-![Kasus 2](screenshot/kasus2.png)
+![Kasus 2](screenshot/Kasus2.png)
 
 **Kasus 3 (Negatif)**
 
-![Kasus 3](screenshot/kasus3_negatif.png)
+![Kasus 3](screenshot/Kasus3.png)
 
 ## 6. Batas Keberlakuan
 Aturan didasarkan pada panduan resmi Samsung dan Google untuk kondisi penggunaan harian, dan hasilnya adalah saran, bukan keputusan akhir mutlak.

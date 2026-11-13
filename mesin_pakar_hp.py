@@ -1,113 +1,114 @@
 import json
 import os
 
+FILE_KB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "kb_hp.json")
 
-def baca_kb(nama_file="kb_kopi.json"):
-    lokasi = os.path.join(os.path.dirname(os.path.abspath(__file__)), nama_file)
-    with open(lokasi, "r", encoding="utf-8") as f:
+
+def muat_kb(path):
+    with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
 
 def kumpulkan_fakta_dasar(aturan):
     semua_maka = {r["maka"] for r in aturan}
-    dasar = []
+    fakta, terlihat = [], set()
     for r in aturan:
-        for kondisi in r["jika"]:
-            if kondisi not in semua_maka and kondisi not in dasar:
-                dasar.append(kondisi)
-    return dasar
+        for k in r["jika"]:
+            if k not in semua_maka and k not in terlihat:
+                fakta.append(k)
+                terlihat.add(k)
+    return fakta
 
 
-def tanya_fakta(fakta_dasar):
-    memori = []
-    print("Jawab y/t.")
-    for i, fakta in enumerate(fakta_dasar, start=1):
+def tanya_user(fakta_dasar):
+    memori = set()
+    print("Jawab pertanyaan berikut dengan y (ya) atau t (tidak).\n")
+    for f in fakta_dasar:
         while True:
-            jawab = input(f"{i}. Apakah {fakta}? (y/t) > ").strip().lower()
+            jawab = input(f"Apakah {f}? (y/t): ").strip().lower()
             if jawab in ("y", "t"):
                 break
-            print("   Masukan tidak valid, ketik 'y' atau 't'.")
+            print("  Masukkan hanya 'y' atau 't'.")
         if jawab == "y":
-            memori.append(fakta)
+            memori.add(f)
+    print()
     return memori
 
 
 def syarat_terpenuhi(aturan, memori):
-    ada = [k in memori for k in aturan["jika"]]
-    return all(ada) if aturan["mode"] == "dan" else any(ada)
+    ada = [k for k in aturan["jika"] if k in memori]
+    if aturan["mode"] == "dan":
+        return ada if len(ada) == len(aturan["jika"]) else None
+    if aturan["mode"] == "atau":
+        return ada if ada else None
+    return None
 
 
-def forward_chaining(daftar_aturan, memori):
-    jejak = []
-    alasan = {}
+def forward_chaining(aturan, memori):
+    jejak = {} 
     siklus = 0
-
     while True:
         siklus += 1
-        cocok = [r for r in daftar_aturan
-                 if syarat_terpenuhi(r, memori) and r["maka"] not in memori]
+        cocok = []
+        for r in aturan:
+            if r["maka"] in memori:
+                continue
+            dipakai = syarat_terpenuhi(r, memori)
+            if dipakai is not None:
+                cocok.append((r, dipakai))
 
         if not cocok:
-            jejak.append((siklus, None, None))
+            print(f"Siklus {siklus}: tidak ada aturan baru, berhenti")
             break
 
-        r = cocok[0]
-        memori.append(r["maka"])
-        terpenuhi = [k for k in r["jika"] if k in memori]
-        alasan[r["maka"]] = (r, terpenuhi)
-        jejak.append((siklus, r["id"], r["maka"]))
-
-    return jejak, alasan
+        r, dipakai = cocok[0] 
+        memori.add(r["maka"])
+        jejak[r["maka"]] = (r["id"], dipakai)
+        print(f"Siklus {siklus}: {r['id']} -> {r['maka']}")
+    return memori, jejak
 
 
-def cetak_alasan(fakta, alasan, tingkat=0):
-    r, terpenuhi = alasan[fakta]
-    spasi = " " * (4 * (tingkat + 1))
-    print(f"{spasi}{fakta} <- {r['id']} ({', '.join(terpenuhi)})")
-    for k in terpenuhi:
-        if k in alasan:
-            cetak_alasan(k, alasan, tingkat + 1)
+def cetak_alasan(fakta, jejak, level):
+    id_aturan, dipakai = jejak[fakta]
+    print(" " * (4 * level) + f"{fakta} <- {id_aturan} ({', '.join(dipakai)})")
+    for k in dipakai:
+        if k in jejak:  
+            cetak_alasan(k, jejak, level + 1)
 
 
 def main():
-    kb = baca_kb()
+    kb = muat_kb(FILE_KB)
     aturan = kb["aturan"]
+    solusi = {r["maka"]: r.get("solusi", "") for r in aturan}
 
+    print("=" * 60)
     print(kb["judul"])
+    print("=" * 60)
 
     fakta_dasar = kumpulkan_fakta_dasar(aturan)
-    memori = tanya_fakta(fakta_dasar)
+    memori = tanya_user(fakta_dasar)
 
+    memori, jejak = forward_chaining(aturan, memori)
+
+    diagnosis = [m for m in jejak if m.startswith("diagnosis:")]
     print()
-    print("Fakta awal: " + (", ".join(memori) if memori else "(tidak ada)"))
-    print()
-
-    jejak, alasan = forward_chaining(aturan, memori)
-    for nomor, id_aturan, hasil in jejak:
-        if id_aturan is None:
-            print(f"Siklus {nomor}: tidak ada aturan baru, berhenti")
-        else:
-            print(f"Siklus {nomor}: {id_aturan} -> {hasil}")
-    print()
-
-    semua_syarat = {k for r in aturan for k in r["jika"]}
-    kesimpulan = [f for f in memori if f in alasan and f not in semua_syarat]
-
-    if kesimpulan:
-        print("Kesimpulan: " + ", ".join(kesimpulan))
-        print("Alasan:")
-        for k in kesimpulan:
-            cetak_alasan(k, alasan)
-    elif alasan:
-        print("Kesimpulan: " + ", ".join(alasan.keys()))
-        print("Alasan:")
-        for k in alasan:
-            cetak_alasan(k, alasan)
+    if not diagnosis:
+        print("Kesimpulan: tidak ada diagnosis yang dapat disimpulkan dari jawaban Anda")
     else:
-        print("Kesimpulan: tidak ada kesimpulan yang dapat ditarik dari fakta tersebut")
+        if len(diagnosis) == 1:
+            print(f"Kesimpulan: {diagnosis[0]}")
+        else:
+            print(f"Kesimpulan ({len(diagnosis)} diagnosis):")
+            for d in diagnosis:
+                print(f"  - {d}")
+        print("Alasan:")
+        for d in diagnosis:
+            cetak_alasan(d, jejak, 1)
+        print("\nSolusi:")
+        for d in diagnosis:
+            print(f"  - {d.replace('diagnosis: ', '')}: {solusi[d]}")
 
-    print()
-    print("Catatan: " + kb["batas"])
+    print(f"\nCatatan: {kb['batas']}.")
 
 
 if __name__ == "__main__":
