@@ -1,0 +1,15 @@
+{
+  "judul": "Sistem Pakar Diagnosis HP Cepat Panas (Overheating) dan Baterai Boros",
+  "batas": "Aturan didasarkan pada panduan resmi Samsung dan Google untuk kondisi penggunaan harian, dan hasilnya adalah saran, bukan keputusan akhir mutlak",
+  "sumber": {
+    "S1": "Prevent overheating on your Galaxy device, Samsung Official Support, https://www.samsung.com/us/support/answer/ANS00076952/, diakses 13 November 2026",
+    "S2": "Fix a battery that drains too quickly, Google Android Help, https://support.google.com/android/answer/7664692, diakses 13 November 2026"
+  },
+  "aturan": [
+    { "id": "R1", "jika": [ "bodi hp terasa sangat panas saat disentuh", "muncul notifikasi peringatan suhu perangkat tinggi"], "mode": "atau", "maka": "indikasi perangkat mengalami overheating", "sumber": "S1"},
+    { "id": "R2", "jika": [ "indikasi perangkat mengalami overheating", "sedang digunakan bermain game berat atau rekam video"], "mode": "dan", "maka": "diagnosis: Overheating karena beban prosesor", "sumber": "S1"},
+    { "id": "R3", "jika": [ "persentase baterai berkurang sangat drastis", "hp harus di-charge lebih dari dua kali dalam sehari"], "mode": "atau", "maka": "indikasi baterai bocor atau boros daya", "sumber": "S2"},
+    { "id": "R4", "jika": [ "indikasi baterai bocor atau boros daya", "tingkat kecerahan layar selalu diatur maksimal"], "mode": "dan", "maka": "diagnosis: Konsumsi daya layar berlebih", "sumber": "S2"},
+    { "id": "R5", "jika": [ "indikasi perangkat mengalami overheating", "indikasi baterai bocor atau boros daya"], "mode": "dan", "maka": "diagnosis: Beban aplikasi latar belakang", "sumber": "S2"}
+  ]
+}
